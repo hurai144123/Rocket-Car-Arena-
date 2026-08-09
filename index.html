@@ -1,118 +1,317 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
 <title>Rocket Car Arena</title>
 
 <style>
-* {
-    box-sizing: border-box;
+
+*{
+    box-sizing:border-box;
 }
 
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #080b12;
-    font-family: Arial, sans-serif;
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#050810;
+    font-family:Arial,Helvetica,sans-serif;
 }
 
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
+canvas{
+    display:block;
+    width:100vw;
+    height:100vh;
 }
 
-#scoreboard {
-    position: fixed;
-    top: 15px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: center;
-    gap: 35px;
-    z-index: 10;
-    pointer-events: none;
+/* =========================
+   MENU
+========================= */
+
+#menu{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:
+        radial-gradient(circle at center,#172b4d 0%,#070b14 65%);
+    color:white;
+    overflow:auto;
+    padding:25px;
 }
 
-.score {
-    font-size: 42px;
-    font-weight: bold;
-    text-shadow: 0 3px 10px #000;
+#menu h1{
+    margin:0 0 5px;
+    font-size:64px;
+    text-align:center;
+    letter-spacing:4px;
+    text-shadow:0 5px 20px #000;
 }
 
-#blueScore {
-    color: #38a9ff;
+.subtitle{
+    opacity:.7;
+    margin-bottom:25px;
 }
 
-#orangeScore {
-    color: #ff7b28;
+.menuGrid{
+    display:grid;
+    grid-template-columns:repeat(3,220px);
+    gap:18px;
+    max-width:720px;
 }
 
-#timer {
-    font-size: 28px;
-    color: white;
+.panel{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:15px;
+    padding:16px;
+    backdrop-filter:blur(8px);
 }
 
-#boostContainer {
-    position: fixed;
-    bottom: 25px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 240px;
-    height: 22px;
-    border: 3px solid white;
-    border-radius: 15px;
-    background: #111;
-    overflow: hidden;
-    z-index: 10;
+.panel h2{
+    margin:0 0 12px;
+    font-size:18px;
 }
 
-#boostBar {
-    width: 100%;
-    height: 100%;
-    background: #ffd21c;
+.option{
+    width:100%;
+    margin:5px 0;
+    padding:11px;
+    border:2px solid transparent;
+    border-radius:9px;
+    background:#172033;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
 }
 
-#boostText {
-    position: fixed;
-    bottom: 52px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-weight: bold;
-    z-index: 10;
+.option:hover{
+    background:#243452;
 }
 
-#message {
-    position: fixed;
-    top: 42%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 80px;
-    font-weight: bold;
-    text-align: center;
-    text-shadow: 0 5px 25px black;
-    z-index: 20;
-    pointer-events: none;
+.option.selected{
+    border-color:#38a9ff;
+    background:#1c4268;
 }
 
-#controls {
-    position: fixed;
-    bottom: 7px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 13px;
-    opacity: .65;
-    z-index: 10;
-    pointer-events: none;
+.carPreview{
+    height:80px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
+
+.previewCar{
+    width:100px;
+    height:45px;
+    border-radius:10px;
+    position:relative;
+}
+
+.previewCar:after{
+    content:"";
+    position:absolute;
+    left:28px;
+    top:7px;
+    width:38px;
+    height:18px;
+    background:#111;
+    border-radius:4px;
+}
+
+#playButton{
+    margin-top:25px;
+    width:300px;
+    padding:17px;
+    border:0;
+    border-radius:12px;
+    background:#27a5ff;
+    color:white;
+    font-size:23px;
+    font-weight:bold;
+    cursor:pointer;
+    box-shadow:0 5px 25px rgba(39,165,255,.35);
+}
+
+#playButton:hover{
+    transform:scale(1.03);
+}
+
+#progress{
+    margin-top:15px;
+    opacity:.8;
+    text-align:center;
+}
+
+.locked{
+    opacity:.45;
+}
+
+/* =========================
+   GAME UI
+========================= */
+
+#gameUI{
+    display:none;
+}
+
+#scoreboard{
+    position:fixed;
+    top:14px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+    display:flex;
+    align-items:center;
+    gap:32px;
+    pointer-events:none;
+}
+
+.score{
+    font-size:42px;
+    font-weight:bold;
+    text-shadow:0 4px 10px #000;
+}
+
+#blueScore{
+    color:#35aaff;
+}
+
+#orangeScore{
+    color:#ff7b2b;
+}
+
+#timer{
+    color:white;
+    font-size:28px;
+}
+
+#pauseButton{
+    position:fixed;
+    top:18px;
+    right:20px;
+    z-index:30;
+    padding:10px 17px;
+    border:0;
+    border-radius:9px;
+    background:rgba(0,0,0,.65);
+    color:white;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+#boostContainer{
+    position:fixed;
+    bottom:30px;
+    left:50%;
+    transform:translateX(-50%);
+    width:250px;
+    height:21px;
+    border:3px solid white;
+    border-radius:15px;
+    background:#111;
+    overflow:hidden;
+    z-index:20;
+}
+
+#boostBar{
+    height:100%;
+    width:100%;
+    background:#ffd21c;
+}
+
+#boostText{
+    position:fixed;
+    bottom:54px;
+    left:50%;
+    transform:translateX(-50%);
+    color:white;
+    font-weight:bold;
+    z-index:20;
+}
+
+#controls{
+    position:fixed;
+    bottom:7px;
+    left:50%;
+    transform:translateX(-50%);
+    color:white;
+    opacity:.65;
+    font-size:13px;
+    z-index:20;
+}
+
+/* =========================
+   MESSAGE
+========================= */
+
+#message{
+    position:fixed;
+    left:50%;
+    top:43%;
+    transform:translate(-50%,-50%);
+    z-index:50;
+    color:white;
+    font-size:78px;
+    font-weight:bold;
+    text-align:center;
+    text-shadow:0 5px 25px #000;
+    pointer-events:none;
+    white-space:nowrap;
+}
+
+/* =========================
+   PAUSE
+========================= */
+
+#pauseMenu{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:90;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.72);
+}
+
+.pauseBox{
+    background:#121b2d;
+    border:1px solid #40506d;
+    border-radius:18px;
+    padding:35px;
+    width:330px;
+    text-align:center;
+    color:white;
+}
+
+.pauseBox h1{
+    margin-top:0;
+}
+
+.pauseBox button{
+    display:block;
+    width:100%;
+    margin:10px 0;
+    padding:13px;
+    border:0;
+    border-radius:9px;
+    background:#263754;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.pauseBox button:hover{
+    background:#365078;
+}
+
 </style>
 </head>
 
@@ -120,23 +319,136 @@ canvas {
 
 <canvas id="game"></canvas>
 
-<div id="scoreboard">
-    <div id="blueScore" class="score">0</div>
-    <div id="timer">3:00</div>
-    <div id="orangeScore" class="score">0</div>
+<!-- =========================
+     MAIN MENU
+========================= -->
+
+<div id="menu">
+
+    <h1>ROCKET CAR ARENA</h1>
+
+    <div class="subtitle">
+        Cars • Goals • Boost • Bots
+    </div>
+
+    <div class="menuGrid">
+
+        <div class="panel">
+            <h2>🗺️ MAP</h2>
+
+            <button class="option selected" data-map="classic">
+                🟢 Classic
+            </button>
+
+            <button class="option" data-map="neon">
+                🟣 Neon
+            </button>
+
+            <button class="option" data-map="desert">
+                🟠 Desert
+            </button>
+
+            <button class="option" data-map="ice">
+                🔵 Ice
+            </button>
+        </div>
+
+        <div class="panel">
+            <h2>🤖 BOT</h2>
+
+            <button class="option selected" data-difficulty="easy">
+                🟢 Easy
+            </button>
+
+            <button class="option" data-difficulty="normal">
+                🟡 Normal
+            </button>
+
+            <button class="option" data-difficulty="hard">
+                🔴 Hard
+            </button>
+
+            <button class="option" data-difficulty="insane">
+                💀 Insane
+            </button>
+        </div>
+
+        <div class="panel">
+
+            <h2>🚗 CAR</h2>
+
+            <div id="carOptions"></div>
+
+        </div>
+
+    </div>
+
+    <div id="progress"></div>
+
+    <button id="playButton">
+        ▶ PLAY
+    </button>
+
 </div>
 
-<div id="message"></div>
 
-<div id="boostText">BOOST</div>
+<!-- =========================
+     GAME UI
+========================= -->
 
-<div id="boostContainer">
-    <div id="boostBar"></div>
+<div id="gameUI">
+
+    <div id="scoreboard">
+        <div id="blueScore" class="score">0</div>
+        <div id="timer">3:00</div>
+        <div id="orangeScore" class="score">0</div>
+    </div>
+
+    <button id="pauseButton">
+        ⏸ PAUSE
+    </button>
+
+    <div id="message"></div>
+
+    <div id="boostText">BOOST</div>
+
+    <div id="boostContainer">
+        <div id="boostBar"></div>
+    </div>
+
+    <div id="controls">
+        W/S = Drive &nbsp; A/D = Turn &nbsp; SPACE = Boost &nbsp; ESC = Pause
+    </div>
+
 </div>
 
-<div id="controls">
-    W / S = Drive &nbsp;&nbsp; A / D = Turn &nbsp;&nbsp; SPACE = Boost &nbsp;&nbsp; R = Restart
+
+<!-- =========================
+     PAUSE MENU
+========================= -->
+
+<div id="pauseMenu">
+
+    <div class="pauseBox">
+
+        <h1>⏸ PAUSED</h1>
+
+        <button id="resumeButton">
+            ▶ Resume
+        </button>
+
+        <button id="restartButton">
+            🔄 Restart Match
+        </button>
+
+        <button id="menuButton">
+            🏠 Main Menu
+        </button>
+
+    </div>
+
 </div>
+
 
 <script>
 
@@ -147,68 +459,349 @@ canvas {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-function resizeCanvas() {
+function resize(){
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
+    updateField();
 }
 
-window.addEventListener("resize", resizeCanvas);
-resizeCanvas();
+window.addEventListener("resize",resize);
 
 
 /* =========================================================
    INPUT
 ========================================================= */
 
-const keys = Object.create(null);
+const keys = {};
 
-window.addEventListener("keydown", function(e) {
+window.addEventListener("keydown",e=>{
 
-    const key = e.key.toLowerCase();
+    keys[e.key.toLowerCase()] = true;
 
-    keys[key] = true;
-
-    if (
-        e.code === "Space" ||
-        key === "arrowup" ||
-        key === "arrowdown" ||
-        key === "arrowleft" ||
-        key === "arrowright"
-    ) {
+    if(e.code === "Space"){
+        keys[" "] = true;
         e.preventDefault();
     }
 
-    if (key === "r") {
-        restartMatch();
+    if(e.key === "Escape"){
+        togglePause();
+    }
+
+    if(e.key.toLowerCase() === "r"){
+        if(gameState === "playing"){
+            startMatch();
+        }
     }
 });
 
-window.addEventListener("keyup", function(e) {
+window.addEventListener("keyup",e=>{
 
-    const key = e.key.toLowerCase();
+    keys[e.key.toLowerCase()] = false;
 
-    keys[key] = false;
+    if(e.code === "Space"){
+        keys[" "] = false;
+    }
 });
 
 
 /* =========================================================
-   FIELD
+   GAME SETTINGS
 ========================================================= */
 
 const field = {
-    left: 60,
-    right: 0,
-    top: 70,
-    bottom: 0
+    left:60,
+    right:0,
+    top:70,
+    bottom:0
 };
 
-function updateField() {
+const goalHeight = 240;
+const goalDepth = 55;
+
+function updateField(){
 
     field.right = canvas.width - 60;
     field.bottom = canvas.height - 50;
 }
 
-updateField();
+
+/* =========================================================
+   MAPS
+========================================================= */
+
+const maps = {
+
+    classic:{
+        name:"Classic",
+        field:"#176c43",
+        background:"#08101c",
+        line:"rgba(255,255,255,.8)"
+    },
+
+    neon:{
+        name:"Neon",
+        field:"#171342",
+        background:"#050515",
+        line:"#52e8ff"
+    },
+
+    desert:{
+        name:"Desert",
+        field:"#a86d32",
+        background:"#241308",
+        line:"#ffe2a6"
+    },
+
+    ice:{
+        name:"Ice",
+        field:"#6ca9c9",
+        background:"#08141d",
+        line:"#e9ffff"
+    }
+};
+
+let selectedMap = "classic";
+
+
+/* =========================================================
+   DIFFICULTIES
+========================================================= */
+
+const difficulties = {
+
+    easy:{
+        name:"Easy",
+        acceleration:.10,
+        maxSpeed:3.4,
+        turn:.035,
+        reaction:.65
+    },
+
+    normal:{
+        name:"Normal",
+        acceleration:.16,
+        maxSpeed:4.6,
+        turn:.050,
+        reaction:.80
+    },
+
+    hard:{
+        name:"Hard",
+        acceleration:.22,
+        maxSpeed:5.8,
+        turn:.065,
+        reaction:.94
+    },
+
+    insane:{
+        name:"Insane",
+        acceleration:.29,
+        maxSpeed:7,
+        turn:.078,
+        reaction:1
+    }
+};
+
+let selectedDifficulty = "easy";
+
+
+/* =========================================================
+   CARS
+========================================================= */
+
+const cars = [
+
+    {
+        id:"starter",
+        name:"Starter",
+        unlock:0,
+        color:"#299eff",
+        maxSpeed:7,
+        acceleration:.28
+    },
+
+    {
+        id:"speedster",
+        name:"Speedster",
+        unlock:10,
+        color:"#ffdb26",
+        maxSpeed:8.4,
+        acceleration:.32
+    },
+
+    {
+        id:"heavy",
+        name:"Heavy",
+        unlock:25,
+        color:"#e83d4f",
+        maxSpeed:6,
+        acceleration:.40
+    },
+
+    {
+        id:"rocket",
+        name:"Rocket",
+        unlock:50,
+        color:"#b44cff",
+        maxSpeed:9,
+        acceleration:.34
+    },
+
+    {
+        id:"legend",
+        name:"Legend",
+        unlock:100,
+        color:"#ff8c25",
+        maxSpeed:10,
+        acceleration:.38
+    }
+
+];
+
+let selectedCar = "starter";
+
+
+/* =========================================================
+   SAVE DATA
+========================================================= */
+
+let totalGoals =
+    Number(localStorage.getItem("rocketArenaGoals") || 0);
+
+let unlockedCars =
+    JSON.parse(
+        localStorage.getItem("rocketArenaCars") || '["starter"]'
+    );
+
+
+function saveProgress(){
+
+    localStorage.setItem(
+        "rocketArenaGoals",
+        totalGoals
+    );
+
+    localStorage.setItem(
+        "rocketArenaCars",
+        JSON.stringify(unlockedCars)
+    );
+}
+
+
+/* =========================================================
+   CAR MENU
+========================================================= */
+
+function buildCarMenu(){
+
+    const container =
+        document.getElementById("carOptions");
+
+    container.innerHTML = "";
+
+    cars.forEach(car=>{
+
+        const button =
+            document.createElement("button");
+
+        button.className = "option";
+
+        const unlocked =
+            unlockedCars.includes(car.id);
+
+        if(!unlocked){
+            button.classList.add("locked");
+        }
+
+        if(car.id === selectedCar){
+            button.classList.add("selected");
+        }
+
+        if(unlocked){
+
+            button.innerHTML =
+                "🚗 " + car.name;
+
+            button.onclick = ()=>{
+
+                selectedCar = car.id;
+
+                buildCarMenu();
+            };
+
+        }else{
+
+            button.innerHTML =
+                "🔒 " +
+                car.name +
+                " — " +
+                car.unlock +
+                " goals";
+
+            button.onclick = ()=>{
+
+                document.getElementById(
+                    "progress"
+                ).textContent =
+                    car.name +
+                    " unlocks at " +
+                    car.unlock +
+                    " total goals. You have " +
+                    totalGoals + ".";
+            };
+        }
+
+        container.appendChild(button);
+    });
+
+    document.getElementById(
+        "progress"
+    ).textContent =
+        "🏆 Total Goals: " +
+        totalGoals;
+}
+
+
+/* =========================================================
+   MAP BUTTONS
+========================================================= */
+
+document.querySelectorAll("[data-map]").forEach(button=>{
+
+    button.addEventListener("click",()=>{
+
+        selectedMap =
+            button.dataset.map;
+
+        document
+            .querySelectorAll("[data-map]")
+            .forEach(b=>b.classList.remove("selected"));
+
+        button.classList.add("selected");
+    });
+});
+
+
+/* =========================================================
+   DIFFICULTY BUTTONS
+========================================================= */
+
+document.querySelectorAll("[data-difficulty]").forEach(button=>{
+
+    button.addEventListener("click",()=>{
+
+        selectedDifficulty =
+            button.dataset.difficulty;
+
+        document
+            .querySelectorAll("[data-difficulty]")
+            .forEach(b=>b.classList.remove("selected"));
+
+        button.classList.add("selected");
+    });
+});
 
 
 /* =========================================================
@@ -220,63 +813,66 @@ let orangeScore = 0;
 
 let matchTime = 180;
 
-let gameState = "playing";
+let gameState = "menu";
 
 let countdown = 0;
+
+let countdownTimer = null;
 
 let lastTime = performance.now();
 
 
 /* =========================================================
-   CAR CREATOR
+   CAR OBJECT
 ========================================================= */
 
-function createCar(x, y, color, team) {
+function createCar(x,y,color,team){
 
     return {
 
-        x: x,
-        y: y,
+        x:x,
+        y:y,
 
-        vx: 0,
-        vy: 0,
+        vx:0,
+        vy:0,
 
-        angle: team === "blue" ? 0 : Math.PI,
+        angle:
+            team === "blue"
+            ? 0
+            : Math.PI,
 
-        color: color,
-        team: team,
+        color:color,
 
-        width: 54,
-        height: 30,
+        team:team,
 
-        boost: 100,
+        boost:100,
 
-        maxSpeed: 7,
+        width:55,
+        height:30,
 
-        acceleration: 0.28,
-
-        turnSpeed: 0.065
+        maxSpeed:7,
+        acceleration:.28,
+        turnSpeed:.065
     };
 }
 
 
-/* =========================================================
-   CARS
-========================================================= */
+const player =
+    createCar(
+        250,
+        0,
+        "#299eff",
+        "blue"
+    );
 
-const player = createCar(
-    250,
-    canvas.height / 2,
-    "#269eff",
-    "blue"
-);
 
-const enemy = createCar(
-    0,
-    canvas.height / 2,
-    "#ff7628",
-    "orange"
-);
+const enemy =
+    createCar(
+        0,
+        0,
+        "#ff7628",
+        "orange"
+    );
 
 
 /* =========================================================
@@ -285,13 +881,13 @@ const enemy = createCar(
 
 const ball = {
 
-    x: 0,
-    y: 0,
+    x:0,
+    y:0,
 
-    vx: 0,
-    vy: 0,
+    vx:0,
+    vy:0,
 
-    radius: 20
+    radius:20
 };
 
 
@@ -299,28 +895,38 @@ const ball = {
    RESET POSITIONS
 ========================================================= */
 
-function resetPositions() {
+function resetPositions(){
 
     updateField();
 
-    player.x = field.left + 190;
-    player.y = canvas.height / 2;
+    player.x =
+        field.left + 190;
+
+    player.y =
+        canvas.height / 2;
 
     player.vx = 0;
     player.vy = 0;
-
     player.angle = 0;
+    player.boost = 100;
 
-    enemy.x = field.right - 190;
-    enemy.y = canvas.height / 2;
+
+    enemy.x =
+        field.right - 190;
+
+    enemy.y =
+        canvas.height / 2;
 
     enemy.vx = 0;
     enemy.vy = 0;
-
     enemy.angle = Math.PI;
 
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height / 2;
+
+    ball.x =
+        canvas.width / 2;
+
+    ball.y =
+        canvas.height / 2;
 
     ball.vx = 0;
     ball.vy = 0;
@@ -328,16 +934,65 @@ function resetPositions() {
 
 
 /* =========================================================
+   APPLY CAR STATS
+========================================================= */
+
+function applyCarStats(){
+
+    const car =
+        cars.find(c=>c.id===selectedCar);
+
+    player.color =
+        car.color;
+
+    player.maxSpeed =
+        car.maxSpeed;
+
+    player.acceleration =
+        car.acceleration;
+}
+
+
+/* =========================================================
+   START GAME
+========================================================= */
+
+document.getElementById("playButton")
+.addEventListener("click",()=>{
+
+    document.getElementById("menu").style.display = "none";
+
+    document.getElementById("gameUI").style.display = "block";
+
+    blueScore = 0;
+    orangeScore = 0;
+
+    matchTime = 180;
+
+    applyCarStats();
+
+    resetPositions();
+
+    startCountdown();
+});
+
+
+/* =========================================================
    START MATCH
 ========================================================= */
 
-function startCountdown() {
+function startMatch(){
 
-    gameState = "countdown";
+    if(gameState === "finished"){
 
-    countdown = 3;
+        blueScore = 0;
+        orangeScore = 0;
+        matchTime = 180;
+    }
 
-    showCountdown();
+    resetPositions();
+
+    startCountdown();
 }
 
 
@@ -345,49 +1000,71 @@ function startCountdown() {
    COUNTDOWN
 ========================================================= */
 
-function showCountdown() {
+function startCountdown(){
 
-    if (countdown > 0) {
+    gameState = "countdown";
 
-        document.getElementById("message").textContent =
-            countdown;
+    countdown = 3;
 
-        setTimeout(function() {
+    document.getElementById(
+        "message"
+    ).textContent = "3";
+
+
+    if(countdownTimer){
+        clearInterval(countdownTimer);
+    }
+
+
+    countdownTimer =
+        setInterval(()=>{
 
             countdown--;
 
-            showCountdown();
+            if(countdown > 0){
 
-        }, 1000);
+                document.getElementById(
+                    "message"
+                ).textContent =
+                    countdown;
 
-    } else {
+            }else{
 
-        document.getElementById("message").textContent =
-            "GO!";
+                clearInterval(countdownTimer);
 
-        gameState = "playing";
+                gameState = "playing";
 
-        setTimeout(function() {
+                document.getElementById(
+                    "message"
+                ).textContent =
+                    "GO!";
 
-            document.getElementById("message").textContent = "";
+                setTimeout(()=>{
 
-        }, 700);
-    }
+                    if(gameState === "playing"){
+
+                        document.getElementById(
+                            "message"
+                        ).textContent = "";
+                    }
+
+                },700);
+            }
+
+        },1000);
 }
 
 
 /* =========================================================
-   PLAYER UPDATE
+   PLAYER
 ========================================================= */
 
-function updatePlayer(dt) {
+function updatePlayer(){
 
-    if (gameState !== "playing") return;
+    if(gameState !== "playing") return;
 
-    let accelerating = keys["w"];
-    let reversing = keys["s"];
 
-    if (accelerating) {
+    if(keys["w"]){
 
         player.vx +=
             Math.cos(player.angle) *
@@ -398,160 +1075,186 @@ function updatePlayer(dt) {
             player.acceleration;
     }
 
-    if (reversing) {
+
+    if(keys["s"]){
 
         player.vx -=
             Math.cos(player.angle) *
             player.acceleration *
-            0.55;
+            .55;
 
         player.vy -=
             Math.sin(player.angle) *
             player.acceleration *
-            0.55;
+            .55;
     }
 
 
-    /* TURN */
+    let speed =
+        Math.sqrt(
+            player.vx * player.vx +
+            player.vy * player.vy
+        );
 
-    let speed = Math.sqrt(
-        player.vx * player.vx +
-        player.vy * player.vy
-    );
 
-    if (keys["a"]) {
+    if(keys["a"]){
 
         player.angle -=
             player.turnSpeed *
-            Math.max(speed / 2, 0.35);
+            Math.max(speed/2,.35);
     }
 
-    if (keys["d"]) {
+
+    if(keys["d"]){
 
         player.angle +=
             player.turnSpeed *
-            Math.max(speed / 2, 0.35);
+            Math.max(speed/2,.35);
     }
 
 
-    /* BOOST */
-
-    if (
+    if(
         keys[" "] &&
         player.boost > 0
-    ) {
+    ){
 
         player.vx +=
-            Math.cos(player.angle) * 0.42;
+            Math.cos(player.angle) *
+            .42;
 
         player.vy +=
-            Math.sin(player.angle) * 0.42;
+            Math.sin(player.angle) *
+            .42;
 
-        player.boost -= 0.9;
+        player.boost -= .9;
 
-    } else {
+    }else{
 
-        player.boost += 0.25;
+        player.boost += .25;
     }
 
 
-    player.boost = Math.max(
-        0,
-        Math.min(100, player.boost)
-    );
+    player.boost =
+        Math.max(
+            0,
+            Math.min(100,player.boost)
+        );
 
 
-    /* SPEED LIMIT */
+    speed =
+        Math.sqrt(
+            player.vx * player.vx +
+            player.vy * player.vy
+        );
 
-    speed = Math.sqrt(
-        player.vx * player.vx +
-        player.vy * player.vy
-    );
 
-    if (speed > player.maxSpeed) {
+    if(speed > player.maxSpeed){
 
         player.vx =
-            player.vx / speed *
+            player.vx /
+            speed *
             player.maxSpeed;
 
         player.vy =
-            player.vy / speed *
+            player.vy /
+            speed *
             player.maxSpeed;
     }
 
 
-    /* FRICTION */
-
-    player.vx *= 0.985;
-    player.vy *= 0.985;
-
+    player.vx *= .985;
+    player.vy *= .985;
 
     player.x += player.vx;
     player.y += player.vy;
-
 
     keepCarInside(player);
 }
 
 
 /* =========================================================
-   AI
+   BOT
 ========================================================= */
 
-function updateEnemy() {
+function updateEnemy(){
 
-    if (gameState !== "playing") return;
+    if(gameState !== "playing") return;
 
-    const dx = ball.x - enemy.x;
-    const dy = ball.y - enemy.y;
+    const settings =
+        difficulties[selectedDifficulty];
 
-    const targetAngle = Math.atan2(dy, dx);
+
+    const dx =
+        ball.x - enemy.x;
+
+    const dy =
+        ball.y - enemy.y;
+
+
+    const targetAngle =
+        Math.atan2(dy,dx);
+
 
     let difference =
-        targetAngle - enemy.angle;
+        targetAngle -
+        enemy.angle;
 
-    while (difference > Math.PI) {
-        difference -= Math.PI * 2;
+
+    while(difference > Math.PI){
+        difference -= Math.PI*2;
     }
 
-    while (difference < -Math.PI) {
-        difference += Math.PI * 2;
+    while(difference < -Math.PI){
+        difference += Math.PI*2;
     }
 
 
-    if (difference > 0.08) {
-        enemy.angle += enemy.turnSpeed;
+    if(difference > .08){
+
+        enemy.angle +=
+            settings.turn;
     }
 
-    if (difference < -0.08) {
-        enemy.angle -= enemy.turnSpeed;
+
+    if(difference < -.08){
+
+        enemy.angle -=
+            settings.turn;
     }
 
 
     enemy.vx +=
-        Math.cos(enemy.angle) * 0.16;
+        Math.cos(enemy.angle) *
+        settings.acceleration;
 
     enemy.vy +=
-        Math.sin(enemy.angle) * 0.16;
+        Math.sin(enemy.angle) *
+        settings.acceleration;
 
 
-    const speed = Math.sqrt(
-        enemy.vx * enemy.vx +
-        enemy.vy * enemy.vy
-    );
+    let speed =
+        Math.sqrt(
+            enemy.vx * enemy.vx +
+            enemy.vy * enemy.vy
+        );
 
-    if (speed > 5) {
+
+    if(speed > settings.maxSpeed){
 
         enemy.vx =
-            enemy.vx / speed * 5;
+            enemy.vx /
+            speed *
+            settings.maxSpeed;
 
         enemy.vy =
-            enemy.vy / speed * 5;
+            enemy.vy /
+            speed *
+            settings.maxSpeed;
     }
 
 
-    enemy.vx *= 0.985;
-    enemy.vy *= 0.985;
+    enemy.vx *= .985;
+    enemy.vy *= .985;
 
     enemy.x += enemy.vx;
     enemy.y += enemy.vy;
@@ -561,35 +1264,47 @@ function updateEnemy() {
 
 
 /* =========================================================
-   KEEP CAR INSIDE
+   KEEP CARS INSIDE
 ========================================================= */
 
-function keepCarInside(car) {
+function keepCarInside(car){
 
     const margin = 35;
 
-    if (car.x < field.left + margin) {
 
-        car.x = field.left + margin;
-        car.vx *= -0.4;
+    if(car.x < field.left + margin){
+
+        car.x =
+            field.left + margin;
+
+        car.vx *= -.4;
     }
 
-    if (car.x > field.right - margin) {
 
-        car.x = field.right - margin;
-        car.vx *= -0.4;
+    if(car.x > field.right - margin){
+
+        car.x =
+            field.right - margin;
+
+        car.vx *= -.4;
     }
 
-    if (car.y < field.top + margin) {
 
-        car.y = field.top + margin;
-        car.vy *= -0.4;
+    if(car.y < field.top + margin){
+
+        car.y =
+            field.top + margin;
+
+        car.vy *= -.4;
     }
 
-    if (car.y > field.bottom - margin) {
 
-        car.y = field.bottom - margin;
-        car.vy *= -0.4;
+    if(car.y > field.bottom - margin){
+
+        car.y =
+            field.bottom - margin;
+
+        car.vy *= -.4;
     }
 }
 
@@ -598,83 +1313,145 @@ function keepCarInside(car) {
    BALL
 ========================================================= */
 
-function updateBall() {
+function updateBall(){
 
-    if (gameState !== "playing") return;
+    if(gameState !== "playing") return;
+
 
     ball.x += ball.vx;
     ball.y += ball.vy;
 
-    ball.vx *= 0.993;
-    ball.vy *= 0.993;
+
+    ball.vx *= .993;
+    ball.vy *= .993;
 
 
-    /* TOP */
-
-    if (
+    if(
         ball.y - ball.radius <
         field.top
-    ) {
+    ){
 
         ball.y =
             field.top +
             ball.radius;
 
-        ball.vy *= -0.9;
+        ball.vy *= -.9;
     }
 
 
-    /* BOTTOM */
-
-    if (
+    if(
         ball.y + ball.radius >
         field.bottom
-    ) {
+    ){
 
         ball.y =
             field.bottom -
             ball.radius;
 
-        ball.vy *= -0.9;
+        ball.vy *= -.9;
     }
 
 
-    /* LEFT WALL */
-
-    if (
+    if(
         ball.x - ball.radius <
         field.left &&
         !inGoal(ball.y)
-    ) {
+    ){
 
         ball.x =
             field.left +
             ball.radius;
 
-        ball.vx *= -0.9;
+        ball.vx *= -.9;
     }
 
 
-    /* RIGHT WALL */
-
-    if (
+    if(
         ball.x + ball.radius >
         field.right &&
         !inGoal(ball.y)
-    ) {
+    ){
 
         ball.x =
             field.right -
             ball.radius;
 
-        ball.vx *= -0.9;
+        ball.vx *= -.9;
     }
 
 
-    collideBallWithCar(player);
-    collideBallWithCar(enemy);
+    collide(player);
+    collide(enemy);
 
     checkGoal();
+}
+
+
+/* =========================================================
+   COLLISION
+========================================================= */
+
+function collide(car){
+
+    const dx =
+        ball.x - car.x;
+
+    const dy =
+        ball.y - car.y;
+
+
+    const distance =
+        Math.sqrt(
+            dx*dx +
+            dy*dy
+        );
+
+
+    const minimum =
+        ball.radius + 25;
+
+
+    if(
+        distance < minimum &&
+        distance > 0
+    ){
+
+        const nx =
+            dx / distance;
+
+        const ny =
+            dy / distance;
+
+
+        ball.x =
+            car.x +
+            nx * minimum;
+
+        ball.y =
+            car.y +
+            ny * minimum;
+
+
+        const speed =
+            Math.sqrt(
+                car.vx*car.vx +
+                car.vy*car.vy
+            );
+
+
+        const power =
+            4.5 +
+            speed * 1.5;
+
+
+        ball.vx =
+            nx * power +
+            car.vx*.5;
+
+        ball.vy =
+            ny * power +
+            car.vy*.5;
+    }
 }
 
 
@@ -682,37 +1459,38 @@ function updateBall() {
    GOAL
 ========================================================= */
 
-const goalHeight = 240;
-const goalDepth = 55;
+function inGoal(y){
 
-function inGoal(y) {
-
-    return (
+    return(
         y >
-        canvas.height / 2 -
-        goalHeight / 2
+        canvas.height/2 -
+        goalHeight/2
         &&
         y <
-        canvas.height / 2 +
-        goalHeight / 2
+        canvas.height/2 +
+        goalHeight/2
     );
 }
 
 
-function checkGoal() {
+function checkGoal(){
 
-    if (gameState !== "playing") return;
+    if(gameState !== "playing") return;
 
 
-    /* BLUE SCORES */
-
-    if (
+    if(
         ball.x <
         field.left - 8 &&
         inGoal(ball.y)
-    ) {
+    ){
 
         blueScore++;
+
+        totalGoals++;
+
+        checkUnlocks();
+
+        saveProgress();
 
         goalScored("BLUE SCORES!");
 
@@ -720,15 +1498,19 @@ function checkGoal() {
     }
 
 
-    /* ORANGE SCORES */
-
-    if (
+    if(
         ball.x >
         field.right + 8 &&
         inGoal(ball.y)
-    ) {
+    ){
 
         orangeScore++;
+
+        totalGoals++;
+
+        checkUnlocks();
+
+        saveProgress();
 
         goalScored("ORANGE SCORES!");
     }
@@ -736,10 +1518,40 @@ function checkGoal() {
 
 
 /* =========================================================
+   UNLOCKS
+========================================================= */
+
+function checkUnlocks(){
+
+    cars.forEach(car=>{
+
+        if(
+            totalGoals >= car.unlock &&
+            !unlockedCars.includes(car.id)
+        ){
+
+            unlockedCars.push(car.id);
+
+            saveProgress();
+
+            document.getElementById(
+                "message"
+            ).textContent =
+                "🚗 " +
+                car.name +
+                " UNLOCKED!";
+        }
+    });
+
+    buildCarMenu();
+}
+
+
+/* =========================================================
    GOAL RESET
 ========================================================= */
 
-function goalScored(text) {
+function goalScored(text){
 
     gameState = "goal";
 
@@ -749,80 +1561,109 @@ function goalScored(text) {
 
     resetPositions();
 
-    setTimeout(function() {
+
+    setTimeout(()=>{
 
         startCountdown();
 
-    }, 1200);
+    },1200);
 }
 
 
 /* =========================================================
-   BALL / CAR COLLISION
+   PAUSE
 ========================================================= */
 
-function collideBallWithCar(car) {
+function togglePause(){
 
-    const dx = ball.x - car.x;
-    const dy = ball.y - car.y;
+    if(
+        gameState === "playing"
+        ||
+        gameState === "paused"
+    ){
 
-    const distance =
-        Math.sqrt(dx * dx + dy * dy);
+        if(gameState === "playing"){
 
-    const minimumDistance =
-        ball.radius + 25;
+            gameState = "paused";
 
+            document.getElementById(
+                "pauseMenu"
+            ).style.display =
+                "flex";
 
-    if (
-        distance < minimumDistance &&
-        distance > 0
-    ) {
+        }else{
 
-        const nx = dx / distance;
-        const ny = dy / distance;
+            gameState = "playing";
 
-
-        ball.x =
-            car.x +
-            nx *
-            minimumDistance;
-
-        ball.y =
-            car.y +
-            ny *
-            minimumDistance;
-
-
-        const carSpeed =
-            Math.sqrt(
-                car.vx * car.vx +
-                car.vy * car.vy
-            );
-
-
-        const power =
-            4.5 +
-            carSpeed * 1.4;
-
-
-        ball.vx =
-            nx * power +
-            car.vx * 0.5;
-
-        ball.vy =
-            ny * power +
-            car.vy * 0.5;
+            document.getElementById(
+                "pauseMenu"
+            ).style.display =
+                "none";
+        }
     }
 }
+
+
+document.getElementById(
+    "pauseButton"
+).onclick = togglePause;
+
+
+document.getElementById(
+    "resumeButton"
+).onclick = togglePause;
+
+
+document.getElementById(
+    "restartButton"
+).onclick = ()=>{
+
+    document.getElementById(
+        "pauseMenu"
+    ).style.display =
+        "none";
+
+    startMatch();
+};
+
+
+document.getElementById(
+    "menuButton"
+).onclick = ()=>{
+
+    gameState = "menu";
+
+    document.getElementById(
+        "pauseMenu"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "gameUI"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "menu"
+    ).style.display =
+        "flex";
+
+    buildCarMenu();
+};
 
 
 /* =========================================================
    DRAW FIELD
 ========================================================= */
 
-function drawField() {
+function drawField(){
 
-    ctx.fillStyle = "#08101c";
+    const map =
+        maps[selectedMap];
+
+
+    ctx.fillStyle =
+        map.background;
 
     ctx.fillRect(
         0,
@@ -832,28 +1673,28 @@ function drawField() {
     );
 
 
-    /* GRASS */
-
-    ctx.fillStyle = "#176c43";
+    ctx.fillStyle =
+        map.field;
 
     ctx.fillRect(
         field.left,
         field.top,
-        field.right - field.left,
-        field.bottom - field.top
+        field.right-field.left,
+        field.bottom-field.top
     );
 
 
-    /* FIELD BORDER */
+    ctx.strokeStyle =
+        map.line;
 
-    ctx.strokeStyle = "white";
     ctx.lineWidth = 4;
+
 
     ctx.strokeRect(
         field.left,
         field.top,
-        field.right - field.left,
-        field.bottom - field.top
+        field.right-field.left,
+        field.bottom-field.top
     );
 
 
@@ -862,12 +1703,12 @@ function drawField() {
     ctx.beginPath();
 
     ctx.moveTo(
-        canvas.width / 2,
+        canvas.width/2,
         field.top
     );
 
     ctx.lineTo(
-        canvas.width / 2,
+        canvas.width/2,
         field.bottom
     );
 
@@ -879,40 +1720,96 @@ function drawField() {
     ctx.beginPath();
 
     ctx.arc(
-        canvas.width / 2,
-        canvas.height / 2,
+        canvas.width/2,
+        canvas.height/2,
         100,
         0,
-        Math.PI * 2
+        Math.PI*2
     );
 
     ctx.stroke();
 
 
-    /* BLUE GOAL */
+    /* GOALS */
 
-    ctx.fillStyle = "rgba(30,140,255,.35)";
+    ctx.fillStyle =
+        "rgba(30,140,255,.4)";
 
     ctx.fillRect(
-        field.left - goalDepth,
-        canvas.height / 2 -
-        goalHeight / 2,
+        field.left-goalDepth,
+        canvas.height/2-goalHeight/2,
         goalDepth,
         goalHeight
     );
 
 
-    /* ORANGE GOAL */
-
-    ctx.fillStyle = "rgba(255,100,30,.35)";
+    ctx.fillStyle =
+        "rgba(255,90,30,.4)";
 
     ctx.fillRect(
         field.right,
-        canvas.height / 2 -
-        goalHeight / 2,
+        canvas.height/2-goalHeight/2,
         goalDepth,
         goalHeight
     );
+
+
+    /* NEON MAP DETAILS */
+
+    if(selectedMap === "neon"){
+
+        ctx.strokeStyle =
+            "rgba(255,50,240,.45)";
+
+        ctx.lineWidth = 2;
+
+        for(
+            let x=field.left;
+            x<field.right;
+            x+=60
+        ){
+
+            ctx.beginPath();
+
+            ctx.moveTo(x,field.top);
+            ctx.lineTo(x,field.bottom);
+
+            ctx.stroke();
+        }
+    }
+
+
+    /* ICE DETAILS */
+
+    if(selectedMap === "ice"){
+
+        ctx.strokeStyle =
+            "rgba(255,255,255,.25)";
+
+        for(
+            let i=0;
+            i<15;
+            i++
+        ){
+
+            const x =
+                field.left +
+                Math.random() *
+                (field.right-field.left);
+
+            const y =
+                field.top +
+                Math.random() *
+                (field.bottom-field.top);
+
+            ctx.beginPath();
+
+            ctx.moveTo(x,y);
+            ctx.lineTo(x+30,y+8);
+
+            ctx.stroke();
+        }
+    }
 }
 
 
@@ -920,7 +1817,7 @@ function drawField() {
    DRAW CAR
 ========================================================= */
 
-function drawCar(car) {
+function drawCar(car){
 
     ctx.save();
 
@@ -929,26 +1826,29 @@ function drawCar(car) {
         car.y
     );
 
-    ctx.rotate(car.angle);
+    ctx.rotate(
+        car.angle
+    );
 
 
-    /* BOOST FLAME */
+    /* BOOST */
 
-    if (
+    if(
         car === player &&
         keys[" "] &&
         player.boost > 0 &&
         gameState === "playing"
-    ) {
+    ){
 
-        ctx.fillStyle = "#ffd21c";
+        ctx.fillStyle =
+            "#ffd21c";
 
         ctx.beginPath();
 
-        ctx.moveTo(-25, 0);
-        ctx.lineTo(-50, -9);
-        ctx.lineTo(-42, 0);
-        ctx.lineTo(-50, 9);
+        ctx.moveTo(-28,0);
+        ctx.lineTo(-55,-10);
+        ctx.lineTo(-45,0);
+        ctx.lineTo(-55,10);
 
         ctx.closePath();
 
@@ -958,7 +1858,8 @@ function drawCar(car) {
 
     /* BODY */
 
-    ctx.fillStyle = car.color;
+    ctx.fillStyle =
+        car.color;
 
     ctx.fillRect(
         -27,
@@ -968,33 +1869,37 @@ function drawCar(car) {
     );
 
 
-    /* FRONT */
+    /* WINDOW */
 
-    ctx.fillStyle = "rgba(255,255,255,.25)";
-
-    ctx.fillRect(
-        12,
-        -11,
-        10,
-        22
-    );
-
-
-    /* WINDOWS */
-
-    ctx.fillStyle = "#101820";
+    ctx.fillStyle =
+        "#101820";
 
     ctx.fillRect(
         -5,
         -10,
+        20,
+        20
+    );
+
+
+    /* FRONT */
+
+    ctx.fillStyle =
+        "rgba(255,255,255,.3)";
+
+    ctx.fillRect(
         18,
+        -10,
+        6,
         20
     );
 
 
     /* WHEELS */
 
-    ctx.fillStyle = "#080808";
+    ctx.fillStyle =
+        "#050505";
+
 
     ctx.fillRect(
         -20,
@@ -1033,23 +1938,25 @@ function drawCar(car) {
    DRAW BALL
 ========================================================= */
 
-function drawBall() {
+function drawBall(){
 
     /* SHADOW */
 
     ctx.beginPath();
 
     ctx.ellipse(
-        ball.x + 4,
-        ball.y + 8,
+        ball.x+5,
+        ball.y+9,
         ball.radius,
-        ball.radius * .45,
+        ball.radius*.45,
         0,
         0,
-        Math.PI * 2
+        Math.PI*2
     );
 
-    ctx.fillStyle = "rgba(0,0,0,.3)";
+    ctx.fillStyle =
+        "rgba(0,0,0,.3)";
+
     ctx.fill();
 
 
@@ -1062,14 +1969,17 @@ function drawBall() {
         ball.y,
         ball.radius,
         0,
-        Math.PI * 2
+        Math.PI*2
     );
 
-    ctx.fillStyle = "#f4f4f4";
+    ctx.fillStyle =
+        "white";
 
     ctx.fill();
 
-    ctx.strokeStyle = "#aaa";
+    ctx.strokeStyle =
+        "#aaa";
+
     ctx.lineWidth = 2;
 
     ctx.stroke();
@@ -1080,22 +1990,25 @@ function drawBall() {
    UI
 ========================================================= */
 
-function updateUI() {
+function updateUI(){
 
     document.getElementById(
         "blueScore"
-    ).textContent = blueScore;
+    ).textContent =
+        blueScore;
+
 
     document.getElementById(
         "orangeScore"
-    ).textContent = orangeScore;
+    ).textContent =
+        orangeScore;
 
 
     const minutes =
-        Math.floor(matchTime / 60);
+        Math.floor(matchTime/60);
 
     const seconds =
-        Math.floor(matchTime % 60);
+        Math.floor(matchTime%60);
 
 
     document.getElementById(
@@ -1105,7 +2018,7 @@ function updateUI() {
         ":" +
         seconds
             .toString()
-            .padStart(2, "0");
+            .padStart(2,"0");
 
 
     document.getElementById(
@@ -1116,62 +2029,49 @@ function updateUI() {
 
 
 /* =========================================================
-   MATCH TIMER
+   TIMER
 ========================================================= */
 
-function updateMatchTimer(dt) {
+function updateTimer(dt){
 
-    if (gameState !== "playing") return;
+    if(gameState !== "playing") return;
 
     matchTime -= dt;
 
-    if (matchTime <= 0) {
+
+    if(matchTime <= 0){
 
         matchTime = 0;
 
         gameState = "finished";
 
+
         let result;
 
-        if (blueScore > orangeScore) {
-            result = "BLUE WINS!";
-        }
-        else if (orangeScore > blueScore) {
-            result = "ORANGE WINS!";
-        }
-        else {
+
+        if(blueScore > orangeScore){
+
+            result = "🔵 BLUE WINS!";
+
+        }else if(orangeScore > blueScore){
+
+            result = "🟠 ORANGE WINS!";
+
+        }else{
+
             result = "DRAW!";
         }
+
 
         document.getElementById(
             "message"
         ).innerHTML =
             result +
-            "<br><br><span style='font-size:25px'>Press R to restart</span>";
+            "<br><br>" +
+            "<span style='font-size:25px'>" +
+            "Press R to play again" +
+            "</span>";
     }
-}
-
-
-/* =========================================================
-   RESTART
-========================================================= */
-
-function restartMatch() {
-
-    blueScore = 0;
-    orangeScore = 0;
-
-    matchTime = 180;
-
-    document.getElementById(
-        "message"
-    ).textContent = "";
-
-    resetPositions();
-
-    player.boost = 100;
-
-    gameState = "playing";
 }
 
 
@@ -1179,12 +2079,12 @@ function restartMatch() {
    GAME LOOP
 ========================================================= */
 
-function gameLoop(now) {
+function gameLoop(now){
 
     const dt =
         Math.min(
-            (now - lastTime) / 1000,
-            0.05
+            (now-lastTime)/1000,
+            .05
         );
 
     lastTime = now;
@@ -1192,9 +2092,9 @@ function gameLoop(now) {
 
     updateField();
 
-    updateMatchTimer(dt);
+    updateTimer(dt);
 
-    updatePlayer(dt);
+    updatePlayer();
 
     updateEnemy();
 
@@ -1217,12 +2117,16 @@ function gameLoop(now) {
 
 
 /* =========================================================
-   START
+   INITIALISE
 ========================================================= */
 
-resetPositions();
+resize();
 
-updateUI();
+buildCarMenu();
+
+updateField();
+
+resetPositions();
 
 requestAnimationFrame(gameLoop);
 
@@ -1230,4 +2134,3 @@ requestAnimationFrame(gameLoop);
 
 </body>
 </html>
-```

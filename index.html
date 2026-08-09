@@ -1,1 +1,1233 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Car Arena</title>
 
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #080b12;
+    font-family: Arial, sans-serif;
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+#scoreboard {
+    position: fixed;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 35px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.score {
+    font-size: 42px;
+    font-weight: bold;
+    text-shadow: 0 3px 10px #000;
+}
+
+#blueScore {
+    color: #38a9ff;
+}
+
+#orangeScore {
+    color: #ff7b28;
+}
+
+#timer {
+    font-size: 28px;
+    color: white;
+}
+
+#boostContainer {
+    position: fixed;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    height: 22px;
+    border: 3px solid white;
+    border-radius: 15px;
+    background: #111;
+    overflow: hidden;
+    z-index: 10;
+}
+
+#boostBar {
+    width: 100%;
+    height: 100%;
+    background: #ffd21c;
+}
+
+#boostText {
+    position: fixed;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-weight: bold;
+    z-index: 10;
+}
+
+#message {
+    position: fixed;
+    top: 42%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 80px;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 5px 25px black;
+    z-index: 20;
+    pointer-events: none;
+}
+
+#controls {
+    position: fixed;
+    bottom: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 13px;
+    opacity: .65;
+    z-index: 10;
+    pointer-events: none;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="scoreboard">
+    <div id="blueScore" class="score">0</div>
+    <div id="timer">3:00</div>
+    <div id="orangeScore" class="score">0</div>
+</div>
+
+<div id="message"></div>
+
+<div id="boostText">BOOST</div>
+
+<div id="boostContainer">
+    <div id="boostBar"></div>
+</div>
+
+<div id="controls">
+    W / S = Drive &nbsp;&nbsp; A / D = Turn &nbsp;&nbsp; SPACE = Boost &nbsp;&nbsp; R = Restart
+</div>
+
+<script>
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+const keys = Object.create(null);
+
+window.addEventListener("keydown", function(e) {
+
+    const key = e.key.toLowerCase();
+
+    keys[key] = true;
+
+    if (
+        e.code === "Space" ||
+        key === "arrowup" ||
+        key === "arrowdown" ||
+        key === "arrowleft" ||
+        key === "arrowright"
+    ) {
+        e.preventDefault();
+    }
+
+    if (key === "r") {
+        restartMatch();
+    }
+});
+
+window.addEventListener("keyup", function(e) {
+
+    const key = e.key.toLowerCase();
+
+    keys[key] = false;
+});
+
+
+/* =========================================================
+   FIELD
+========================================================= */
+
+const field = {
+    left: 60,
+    right: 0,
+    top: 70,
+    bottom: 0
+};
+
+function updateField() {
+
+    field.right = canvas.width - 60;
+    field.bottom = canvas.height - 50;
+}
+
+updateField();
+
+
+/* =========================================================
+   GAME VARIABLES
+========================================================= */
+
+let blueScore = 0;
+let orangeScore = 0;
+
+let matchTime = 180;
+
+let gameState = "playing";
+
+let countdown = 0;
+
+let lastTime = performance.now();
+
+
+/* =========================================================
+   CAR CREATOR
+========================================================= */
+
+function createCar(x, y, color, team) {
+
+    return {
+
+        x: x,
+        y: y,
+
+        vx: 0,
+        vy: 0,
+
+        angle: team === "blue" ? 0 : Math.PI,
+
+        color: color,
+        team: team,
+
+        width: 54,
+        height: 30,
+
+        boost: 100,
+
+        maxSpeed: 7,
+
+        acceleration: 0.28,
+
+        turnSpeed: 0.065
+    };
+}
+
+
+/* =========================================================
+   CARS
+========================================================= */
+
+const player = createCar(
+    250,
+    canvas.height / 2,
+    "#269eff",
+    "blue"
+);
+
+const enemy = createCar(
+    0,
+    canvas.height / 2,
+    "#ff7628",
+    "orange"
+);
+
+
+/* =========================================================
+   BALL
+========================================================= */
+
+const ball = {
+
+    x: 0,
+    y: 0,
+
+    vx: 0,
+    vy: 0,
+
+    radius: 20
+};
+
+
+/* =========================================================
+   RESET POSITIONS
+========================================================= */
+
+function resetPositions() {
+
+    updateField();
+
+    player.x = field.left + 190;
+    player.y = canvas.height / 2;
+
+    player.vx = 0;
+    player.vy = 0;
+
+    player.angle = 0;
+
+    enemy.x = field.right - 190;
+    enemy.y = canvas.height / 2;
+
+    enemy.vx = 0;
+    enemy.vy = 0;
+
+    enemy.angle = Math.PI;
+
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height / 2;
+
+    ball.vx = 0;
+    ball.vy = 0;
+}
+
+
+/* =========================================================
+   START MATCH
+========================================================= */
+
+function startCountdown() {
+
+    gameState = "countdown";
+
+    countdown = 3;
+
+    showCountdown();
+}
+
+
+/* =========================================================
+   COUNTDOWN
+========================================================= */
+
+function showCountdown() {
+
+    if (countdown > 0) {
+
+        document.getElementById("message").textContent =
+            countdown;
+
+        setTimeout(function() {
+
+            countdown--;
+
+            showCountdown();
+
+        }, 1000);
+
+    } else {
+
+        document.getElementById("message").textContent =
+            "GO!";
+
+        gameState = "playing";
+
+        setTimeout(function() {
+
+            document.getElementById("message").textContent = "";
+
+        }, 700);
+    }
+}
+
+
+/* =========================================================
+   PLAYER UPDATE
+========================================================= */
+
+function updatePlayer(dt) {
+
+    if (gameState !== "playing") return;
+
+    let accelerating = keys["w"];
+    let reversing = keys["s"];
+
+    if (accelerating) {
+
+        player.vx +=
+            Math.cos(player.angle) *
+            player.acceleration;
+
+        player.vy +=
+            Math.sin(player.angle) *
+            player.acceleration;
+    }
+
+    if (reversing) {
+
+        player.vx -=
+            Math.cos(player.angle) *
+            player.acceleration *
+            0.55;
+
+        player.vy -=
+            Math.sin(player.angle) *
+            player.acceleration *
+            0.55;
+    }
+
+
+    /* TURN */
+
+    let speed = Math.sqrt(
+        player.vx * player.vx +
+        player.vy * player.vy
+    );
+
+    if (keys["a"]) {
+
+        player.angle -=
+            player.turnSpeed *
+            Math.max(speed / 2, 0.35);
+    }
+
+    if (keys["d"]) {
+
+        player.angle +=
+            player.turnSpeed *
+            Math.max(speed / 2, 0.35);
+    }
+
+
+    /* BOOST */
+
+    if (
+        keys[" "] &&
+        player.boost > 0
+    ) {
+
+        player.vx +=
+            Math.cos(player.angle) * 0.42;
+
+        player.vy +=
+            Math.sin(player.angle) * 0.42;
+
+        player.boost -= 0.9;
+
+    } else {
+
+        player.boost += 0.25;
+    }
+
+
+    player.boost = Math.max(
+        0,
+        Math.min(100, player.boost)
+    );
+
+
+    /* SPEED LIMIT */
+
+    speed = Math.sqrt(
+        player.vx * player.vx +
+        player.vy * player.vy
+    );
+
+    if (speed > player.maxSpeed) {
+
+        player.vx =
+            player.vx / speed *
+            player.maxSpeed;
+
+        player.vy =
+            player.vy / speed *
+            player.maxSpeed;
+    }
+
+
+    /* FRICTION */
+
+    player.vx *= 0.985;
+    player.vy *= 0.985;
+
+
+    player.x += player.vx;
+    player.y += player.vy;
+
+
+    keepCarInside(player);
+}
+
+
+/* =========================================================
+   AI
+========================================================= */
+
+function updateEnemy() {
+
+    if (gameState !== "playing") return;
+
+    const dx = ball.x - enemy.x;
+    const dy = ball.y - enemy.y;
+
+    const targetAngle = Math.atan2(dy, dx);
+
+    let difference =
+        targetAngle - enemy.angle;
+
+    while (difference > Math.PI) {
+        difference -= Math.PI * 2;
+    }
+
+    while (difference < -Math.PI) {
+        difference += Math.PI * 2;
+    }
+
+
+    if (difference > 0.08) {
+        enemy.angle += enemy.turnSpeed;
+    }
+
+    if (difference < -0.08) {
+        enemy.angle -= enemy.turnSpeed;
+    }
+
+
+    enemy.vx +=
+        Math.cos(enemy.angle) * 0.16;
+
+    enemy.vy +=
+        Math.sin(enemy.angle) * 0.16;
+
+
+    const speed = Math.sqrt(
+        enemy.vx * enemy.vx +
+        enemy.vy * enemy.vy
+    );
+
+    if (speed > 5) {
+
+        enemy.vx =
+            enemy.vx / speed * 5;
+
+        enemy.vy =
+            enemy.vy / speed * 5;
+    }
+
+
+    enemy.vx *= 0.985;
+    enemy.vy *= 0.985;
+
+    enemy.x += enemy.vx;
+    enemy.y += enemy.vy;
+
+    keepCarInside(enemy);
+}
+
+
+/* =========================================================
+   KEEP CAR INSIDE
+========================================================= */
+
+function keepCarInside(car) {
+
+    const margin = 35;
+
+    if (car.x < field.left + margin) {
+
+        car.x = field.left + margin;
+        car.vx *= -0.4;
+    }
+
+    if (car.x > field.right - margin) {
+
+        car.x = field.right - margin;
+        car.vx *= -0.4;
+    }
+
+    if (car.y < field.top + margin) {
+
+        car.y = field.top + margin;
+        car.vy *= -0.4;
+    }
+
+    if (car.y > field.bottom - margin) {
+
+        car.y = field.bottom - margin;
+        car.vy *= -0.4;
+    }
+}
+
+
+/* =========================================================
+   BALL
+========================================================= */
+
+function updateBall() {
+
+    if (gameState !== "playing") return;
+
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    ball.vx *= 0.993;
+    ball.vy *= 0.993;
+
+
+    /* TOP */
+
+    if (
+        ball.y - ball.radius <
+        field.top
+    ) {
+
+        ball.y =
+            field.top +
+            ball.radius;
+
+        ball.vy *= -0.9;
+    }
+
+
+    /* BOTTOM */
+
+    if (
+        ball.y + ball.radius >
+        field.bottom
+    ) {
+
+        ball.y =
+            field.bottom -
+            ball.radius;
+
+        ball.vy *= -0.9;
+    }
+
+
+    /* LEFT WALL */
+
+    if (
+        ball.x - ball.radius <
+        field.left &&
+        !inGoal(ball.y)
+    ) {
+
+        ball.x =
+            field.left +
+            ball.radius;
+
+        ball.vx *= -0.9;
+    }
+
+
+    /* RIGHT WALL */
+
+    if (
+        ball.x + ball.radius >
+        field.right &&
+        !inGoal(ball.y)
+    ) {
+
+        ball.x =
+            field.right -
+            ball.radius;
+
+        ball.vx *= -0.9;
+    }
+
+
+    collideBallWithCar(player);
+    collideBallWithCar(enemy);
+
+    checkGoal();
+}
+
+
+/* =========================================================
+   GOAL
+========================================================= */
+
+const goalHeight = 240;
+const goalDepth = 55;
+
+function inGoal(y) {
+
+    return (
+        y >
+        canvas.height / 2 -
+        goalHeight / 2
+        &&
+        y <
+        canvas.height / 2 +
+        goalHeight / 2
+    );
+}
+
+
+function checkGoal() {
+
+    if (gameState !== "playing") return;
+
+
+    /* BLUE SCORES */
+
+    if (
+        ball.x <
+        field.left - 8 &&
+        inGoal(ball.y)
+    ) {
+
+        blueScore++;
+
+        goalScored("BLUE SCORES!");
+
+        return;
+    }
+
+
+    /* ORANGE SCORES */
+
+    if (
+        ball.x >
+        field.right + 8 &&
+        inGoal(ball.y)
+    ) {
+
+        orangeScore++;
+
+        goalScored("ORANGE SCORES!");
+    }
+}
+
+
+/* =========================================================
+   GOAL RESET
+========================================================= */
+
+function goalScored(text) {
+
+    gameState = "goal";
+
+    document.getElementById(
+        "message"
+    ).textContent = text;
+
+    resetPositions();
+
+    setTimeout(function() {
+
+        startCountdown();
+
+    }, 1200);
+}
+
+
+/* =========================================================
+   BALL / CAR COLLISION
+========================================================= */
+
+function collideBallWithCar(car) {
+
+    const dx = ball.x - car.x;
+    const dy = ball.y - car.y;
+
+    const distance =
+        Math.sqrt(dx * dx + dy * dy);
+
+    const minimumDistance =
+        ball.radius + 25;
+
+
+    if (
+        distance < minimumDistance &&
+        distance > 0
+    ) {
+
+        const nx = dx / distance;
+        const ny = dy / distance;
+
+
+        ball.x =
+            car.x +
+            nx *
+            minimumDistance;
+
+        ball.y =
+            car.y +
+            ny *
+            minimumDistance;
+
+
+        const carSpeed =
+            Math.sqrt(
+                car.vx * car.vx +
+                car.vy * car.vy
+            );
+
+
+        const power =
+            4.5 +
+            carSpeed * 1.4;
+
+
+        ball.vx =
+            nx * power +
+            car.vx * 0.5;
+
+        ball.vy =
+            ny * power +
+            car.vy * 0.5;
+    }
+}
+
+
+/* =========================================================
+   DRAW FIELD
+========================================================= */
+
+function drawField() {
+
+    ctx.fillStyle = "#08101c";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /* GRASS */
+
+    ctx.fillStyle = "#176c43";
+
+    ctx.fillRect(
+        field.left,
+        field.top,
+        field.right - field.left,
+        field.bottom - field.top
+    );
+
+
+    /* FIELD BORDER */
+
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 4;
+
+    ctx.strokeRect(
+        field.left,
+        field.top,
+        field.right - field.left,
+        field.bottom - field.top
+    );
+
+
+    /* CENTRE LINE */
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        canvas.width / 2,
+        field.top
+    );
+
+    ctx.lineTo(
+        canvas.width / 2,
+        field.bottom
+    );
+
+    ctx.stroke();
+
+
+    /* CENTRE CIRCLE */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        canvas.width / 2,
+        canvas.height / 2,
+        100,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.stroke();
+
+
+    /* BLUE GOAL */
+
+    ctx.fillStyle = "rgba(30,140,255,.35)";
+
+    ctx.fillRect(
+        field.left - goalDepth,
+        canvas.height / 2 -
+        goalHeight / 2,
+        goalDepth,
+        goalHeight
+    );
+
+
+    /* ORANGE GOAL */
+
+    ctx.fillStyle = "rgba(255,100,30,.35)";
+
+    ctx.fillRect(
+        field.right,
+        canvas.height / 2 -
+        goalHeight / 2,
+        goalDepth,
+        goalHeight
+    );
+}
+
+
+/* =========================================================
+   DRAW CAR
+========================================================= */
+
+function drawCar(car) {
+
+    ctx.save();
+
+    ctx.translate(
+        car.x,
+        car.y
+    );
+
+    ctx.rotate(car.angle);
+
+
+    /* BOOST FLAME */
+
+    if (
+        car === player &&
+        keys[" "] &&
+        player.boost > 0 &&
+        gameState === "playing"
+    ) {
+
+        ctx.fillStyle = "#ffd21c";
+
+        ctx.beginPath();
+
+        ctx.moveTo(-25, 0);
+        ctx.lineTo(-50, -9);
+        ctx.lineTo(-42, 0);
+        ctx.lineTo(-50, 9);
+
+        ctx.closePath();
+
+        ctx.fill();
+    }
+
+
+    /* BODY */
+
+    ctx.fillStyle = car.color;
+
+    ctx.fillRect(
+        -27,
+        -15,
+        54,
+        30
+    );
+
+
+    /* FRONT */
+
+    ctx.fillStyle = "rgba(255,255,255,.25)";
+
+    ctx.fillRect(
+        12,
+        -11,
+        10,
+        22
+    );
+
+
+    /* WINDOWS */
+
+    ctx.fillStyle = "#101820";
+
+    ctx.fillRect(
+        -5,
+        -10,
+        18,
+        20
+    );
+
+
+    /* WHEELS */
+
+    ctx.fillStyle = "#080808";
+
+    ctx.fillRect(
+        -20,
+        -19,
+        11,
+        7
+    );
+
+    ctx.fillRect(
+        -20,
+        12,
+        11,
+        7
+    );
+
+    ctx.fillRect(
+        10,
+        -19,
+        11,
+        7
+    );
+
+    ctx.fillRect(
+        10,
+        12,
+        11,
+        7
+    );
+
+
+    ctx.restore();
+}
+
+
+/* =========================================================
+   DRAW BALL
+========================================================= */
+
+function drawBall() {
+
+    /* SHADOW */
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        ball.x + 4,
+        ball.y + 8,
+        ball.radius,
+        ball.radius * .45,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "rgba(0,0,0,.3)";
+    ctx.fill();
+
+
+    /* BALL */
+
+    ctx.beginPath();
+
+    ctx.arc(
+        ball.x,
+        ball.y,
+        ball.radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fillStyle = "#f4f4f4";
+
+    ctx.fill();
+
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 2;
+
+    ctx.stroke();
+}
+
+
+/* =========================================================
+   UI
+========================================================= */
+
+function updateUI() {
+
+    document.getElementById(
+        "blueScore"
+    ).textContent = blueScore;
+
+    document.getElementById(
+        "orangeScore"
+    ).textContent = orangeScore;
+
+
+    const minutes =
+        Math.floor(matchTime / 60);
+
+    const seconds =
+        Math.floor(matchTime % 60);
+
+
+    document.getElementById(
+        "timer"
+    ).textContent =
+        minutes +
+        ":" +
+        seconds
+            .toString()
+            .padStart(2, "0");
+
+
+    document.getElementById(
+        "boostBar"
+    ).style.width =
+        player.boost + "%";
+}
+
+
+/* =========================================================
+   MATCH TIMER
+========================================================= */
+
+function updateMatchTimer(dt) {
+
+    if (gameState !== "playing") return;
+
+    matchTime -= dt;
+
+    if (matchTime <= 0) {
+
+        matchTime = 0;
+
+        gameState = "finished";
+
+        let result;
+
+        if (blueScore > orangeScore) {
+            result = "BLUE WINS!";
+        }
+        else if (orangeScore > blueScore) {
+            result = "ORANGE WINS!";
+        }
+        else {
+            result = "DRAW!";
+        }
+
+        document.getElementById(
+            "message"
+        ).innerHTML =
+            result +
+            "<br><br><span style='font-size:25px'>Press R to restart</span>";
+    }
+}
+
+
+/* =========================================================
+   RESTART
+========================================================= */
+
+function restartMatch() {
+
+    blueScore = 0;
+    orangeScore = 0;
+
+    matchTime = 180;
+
+    document.getElementById(
+        "message"
+    ).textContent = "";
+
+    resetPositions();
+
+    player.boost = 100;
+
+    gameState = "playing";
+}
+
+
+/* =========================================================
+   GAME LOOP
+========================================================= */
+
+function gameLoop(now) {
+
+    const dt =
+        Math.min(
+            (now - lastTime) / 1000,
+            0.05
+        );
+
+    lastTime = now;
+
+
+    updateField();
+
+    updateMatchTimer(dt);
+
+    updatePlayer(dt);
+
+    updateEnemy();
+
+    updateBall();
+
+    updateUI();
+
+
+    drawField();
+
+    drawBall();
+
+    drawCar(player);
+
+    drawCar(enemy);
+
+
+    requestAnimationFrame(gameLoop);
+}
+
+
+/* =========================================================
+   START
+========================================================= */
+
+resetPositions();
+
+updateUI();
+
+requestAnimationFrame(gameLoop);
+
+</script>
+
+</body>
+</html>
+```
